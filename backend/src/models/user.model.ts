@@ -13,6 +13,7 @@ interface IUser extends mongoose.Document {
   createdAt:Date;
   updatedAt:Date;
   comparePassword(candidatePassword:string):Promise<boolean>;
+  isInitialPassword:Boolean;
 }
 
 const userSchema = new Schema<IUser>({
@@ -52,7 +53,13 @@ const userSchema = new Schema<IUser>({
   deletedAt:{
     type:Date,
     default:null
+  },
+  
+  isInitialPassword:{
+    type:Boolean,
+    default:true
   }
+  
 
 }, { timestamps: true });
 

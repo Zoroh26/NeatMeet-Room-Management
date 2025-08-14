@@ -16,8 +16,14 @@ import {
   createRoomValidation,
   handleValidationErrors
 } from './room.validation';
+import { authenticateToken } from '../../../middlwares/auth.middleware';
+import { allowPasswordChangeRoutes } from '../../../middlwares/password-change.middleware';
 
 const router = Router();
+
+// Apply authentication and password change middleware to all routes
+router.use(authenticateToken);
+router.use(allowPasswordChangeRoutes);
 
 // GET routes
 router.get('/', getRooms);                         

@@ -1,4 +1,3 @@
-// Create: backend/src/api/auth/v1/auth.validation.ts
 import { Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
 
@@ -7,18 +6,15 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
     if (!errors.isEmpty()) {
         return res.status(400).json({
             success: false,
-            message: "Validation failed",
+            message: 'Validation failed',
             errors: errors.array()
         });
     }
     next();
 };
 
-// Login validation
 export const validateLogin = [
     body('email')
-        .notEmpty()
-        .withMessage('Email is required')
         .isEmail()
         .withMessage('Please provide a valid email address')
         .normalizeEmail(),
@@ -30,43 +26,49 @@ export const validateLogin = [
     handleValidationErrors
 ];
 
-// Register validation
 export const validateRegister = [
     body('name')
+        .trim()
         .notEmpty()
         .withMessage('Name is required')
         .isLength({ min: 2, max: 50 })
-        .withMessage('Name must be between 2 and 50 characters')
-        .matches(/^[a-zA-Z\s]+$/)
-        .withMessage('Name can only contain letters and spaces')
-        .trim(),
+        .withMessage('Name must be between 2 and 50 characters'),
 
     body('email')
-        .notEmpty()
-        .withMessage('Email is required')
         .isEmail()
         .withMessage('Please provide a valid email address')
-        .normalizeEmail(),
+        .customSanitizer((value) => value.toLowerCase().trim()),
 
-    body('password')
-        .notEmpty()
-        .withMessage('Password is required')
-        .isLength({ min: 6, max: 128 })
-        .withMessage('Password must be between 6 and 128 characters')
-        .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/)
-        .withMessage('Password must contain at least one letter and one number'),
-
-    body('designation')
-        .notEmpty()
-        .withMessage('Designation is required')
-        .isLength({ min: 2, max: 100 })
-        .withMessage('Designation must be between 2 and 100 characters')
-        .trim(),
+    body('password')  // ✅ Added password validation for registration
+        .isLength({ min: 6 })
+        .withMessage('Temporary password must be at least 6 characters long')
+        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+        .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
 
     body('role')
         .optional()
-        .isIn(['admin', 'employee', 'manager'])
-        .withMessage('Role must be either admin, employee, or manager'),
+        .isIn(['admin', 'employee'])
+        .withMessage('Role must be either admin or employee'),
+
+    body('designation')
+        .trim()
+        .notEmpty()
+        .withMessage('Designation is required'),
 
     handleValidationErrors
 ];
+
+export const validateChangePassword = [
+    body('currentPassword')
+        .notEmpty()
+        .withMessage('Current password is required'),
+
+    body('newPassword')
+        .isLength({ min: 6 })
+        .withMessage('New password must be at least 6 characters long')
+        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+        .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+
+    handleValidationErrors
+];
+
