@@ -22,14 +22,14 @@ export const createRoomValidation = [
 
   body('status')
     .optional()
-    .isIn(['available', 'occupied', 'maintenance', 'unavailable'])
-    .withMessage('Status must be one of: available, occupied, maintenance, unavailable'),
+    .isIn(['available', 'occupied', 'maintenance', 'out-of-service'])
+    .withMessage('Status must be one of: available, occupied, maintenance, out-of-service'),
 
   body('description')
     .optional()
     .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Description cannot exceed 1000 characters'),
+    .isLength({ max: 500 })
+    .withMessage('Description cannot exceed 500 characters'),
 
   body('amenities')
     .optional()

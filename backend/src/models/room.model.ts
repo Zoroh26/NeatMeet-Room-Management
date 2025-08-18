@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 interface IRoom extends mongoose.Document {
-  room_id: mongoose.Types.ObjectId;
   name: string;
   location: string;
   capacity: number;
@@ -15,11 +14,6 @@ interface IRoom extends mongoose.Document {
 }
 
 const roomSchema = new Schema<IRoom>({
-  room_id: { 
-    type: Schema.Types.ObjectId, 
-    required: true, 
-    default: () => new mongoose.Types.ObjectId() 
-  },
   name: { 
     type: String, 
     required: true,
@@ -42,13 +36,7 @@ const roomSchema = new Schema<IRoom>({
   },
   amenities: {
     type: [String],
-    default: [],
-    validate: {
-      validator: function(amenities: string[]) {
-        return amenities.every(amenity => amenity.trim().length > 0);
-      },
-      message: 'Amenities cannot be empty strings'
-    }
+    default: []
   },
   status: { 
     type: String, 

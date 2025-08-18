@@ -38,6 +38,8 @@ export class RoomService {
   }): Promise<any> {
     const { name, location, capacity, amenities, status, description } = roomData;
 
+    console.log('🏠 Creating room with data:', JSON.stringify(roomData, null, 2));
+
     const existingRoom = await Room.findOne({ 
       name: name.trim(),
       $or: [
@@ -50,7 +52,7 @@ export class RoomService {
       throw new Error('Room with this name already exists');
     }
 
-    const newRoom = new Room({
+    const newRoomData = {
       name: name.trim(),
       location: location.trim(),
       capacity,
@@ -59,9 +61,27 @@ export class RoomService {
       description: description?.trim(),
       isDeleted: false,
       deletedAt: null
-    });
+    };
 
+    console.log('🏠 Processed room data:', JSON.stringify(newRoomData, null, 2));
+
+    const newRoom = new Room(newRoomData);
+    
+    console.log('🏠 Room instance created, validating...');
+    
+    try {
+      await newRoom.validate();
+      console.log('✅ Room validation passed');
+    } catch (validationError: any) {
+      console.error('❌ Room validation failed:', validationError);
+      console.error('❌ Validation errors:', validationError.errors);
+      throw validationError;
+    }
+
+    console.log('🏠 Saving room...');
     await newRoom.save();
+    console.log('✅ Room saved successfully');
+    
     return newRoom;
   }
 

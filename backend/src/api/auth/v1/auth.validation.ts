@@ -59,6 +59,19 @@ export const validateRegister = [
 ];
 
 export const validateChangePassword = [
+    body('userId')
+        .notEmpty()
+        .withMessage('User ID is required')
+        .isMongoId()
+        .withMessage('Invalid user ID format'),
+
+    body('email')
+        .notEmpty()
+        .withMessage('Email is required')
+        .isEmail()
+        .withMessage('Please provide a valid email address')
+        .normalizeEmail(),
+
     body('currentPassword')
         .notEmpty()
         .withMessage('Current password is required'),

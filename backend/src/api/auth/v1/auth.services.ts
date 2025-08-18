@@ -4,6 +4,7 @@ dotenv.config();
 
 import * as bcrypt from 'bcrypt';
 const jwt = require('jsonwebtoken');
+import { formatUserResponse } from '../../../utils/response.util';
 
 const User = require('../../../models/user.model');
 
@@ -70,11 +71,10 @@ class AuthService {
             role: user.role,
         });
 
-        const userResponse = user.toObject();
-        delete userResponse.password;
+        const cleanUser = formatUserResponse(user);
 
         return {
-            user: userResponse,
+            user: cleanUser,
             token,
             message: 'Login successful',
             requiresPasswordChange
@@ -135,18 +135,17 @@ class AuthService {
             // Don't throw error, just log it - user creation should still succeed
         }
 
-        const userResponse = newUser.toObject();
-        delete userResponse.password;
+        const cleanUser = formatUserResponse(newUser);
 
         return {
-            user: userResponse,
+            user: cleanUser,
             message: 'User registered successfully and credentials sent via email',
             createdBy: admin.name
         };
     }
 
-    // Change password for logged-in users
-    async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    // Change password for logged-in users with additional verification
+    async changePassword(userId: string, email: string, currentPassword: string, newPassword: string) {
         const user = await User.findOne({
             _id: userId
         });
@@ -155,26 +154,40 @@ class AuthService {
             throw new Error('User not found');
         }
 
+        // Verify email matches the user's email
+        if (user.email.toLowerCase() !== email.toLowerCase()) {
+            throw new Error('Email verification failed. Provided email does not match user account');
+        }
+
+        // Verify current password
         const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
         if (!isCurrentPasswordValid) {
             throw new Error('Current password is incorrect');
         }
-        if (newPassword.length < 6) {
-        throw new Error('New password must be at least 6 characters long');
-    }
 
-        
+        // Validate new password length
+        if (newPassword.length < 6) {
+            throw new Error('New password must be at least 6 characters long');
+        }
+
+        // Ensure new password is different from current password
+        const isSamePassword = await bcrypt.compare(newPassword, user.password);
+        if (isSamePassword) {
+            throw new Error('New password must be different from current password');
+        }
+
+        // Update password
         user.password = newPassword;
         user.isInitialPassword = false;
         
         await user.save();
         
-        const userResponse = user.toObject();
-        delete userResponse.password;
+        const cleanUser = formatUserResponse(user);
 
         return {
-            user:userResponse,
-            message: 'Password changed successfully' };
+            user: cleanUser,
+            message: 'Password changed successfully'
+        };
     }
 
     // Admin reset user password
@@ -252,7 +265,8 @@ class AuthService {
         if (!user) {
             throw new Error('User not found');
         }
-        return user;
+        
+        return formatUserResponse(user);
     }
 
     
