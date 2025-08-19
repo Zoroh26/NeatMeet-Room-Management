@@ -13,6 +13,6 @@ router.post('/register', authenticateToken, authorize(['admin']), validateRegist
 router.post('/logout', authenticateToken, logout);         
 router.get('/me', authenticateToken, getCurrentUser);
 router.put('/reset-password/:userId', authenticateToken, authorize(['admin']), resetUserPassword);
-router.put('/change-password',authenticateToken,validateChangePassword,changePassword)
+router.put('/change-password',validateChangePassword,changePassword)
 
 module.exports = router;

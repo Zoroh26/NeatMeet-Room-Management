@@ -10,7 +10,9 @@ import {
   hardDeleteRoom,
   restoreRoom,
   getAvailableRooms,
-  updateRoomStatus
+  updateRoomStatus,
+  getRoomSchedule,
+  checkRoomAvailability
 } from './room.controller';
 import {
   createRoomValidation,
@@ -30,7 +32,9 @@ router.get('/', getRooms);
 router.get('/all', getAllRooms);                   
 router.get('/deleted', getDeletedRooms);           
 router.get('/available', getAvailableRooms);       
-router.get('/:id', getRoomById);  
+router.get('/:id', getRoomById);
+router.get('/:id/schedule', getRoomSchedule);      
+router.get('/:id/availability', checkRoomAvailability);  
 
 // POST routes
 router.post('/', createRoomValidation, handleValidationErrors, createRoom);  

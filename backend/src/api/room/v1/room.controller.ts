@@ -3,11 +3,31 @@ import { RoomService } from './room.service';
 
 export const getRooms = async (req: Request, res: Response) => {
   try {
-    const rooms = await RoomService.getActiveRooms();
+    const { start_time, end_time, available_only } = req.query;
+    
+    // Convert query parameters
+    const startTime = start_time as string;
+    const endTime = end_time as string;
+    const filterAvailable = available_only === 'true';
+
+    const rooms = await RoomService.getActiveRooms(startTime, endTime, filterAvailable);
+    
+    let message = 'Rooms retrieved successfully';
+    if (startTime && endTime) {
+      message = `Room availability checked for ${startTime} to ${endTime}`;
+    } else if (filterAvailable) {
+      message = 'Available rooms retrieved successfully';
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Rooms retrieved successfully',
+      message,
       count: rooms.length,
+      filters: {
+        start_time: startTime || null,
+        end_time: endTime || null,
+        available_only: filterAvailable
+      },
       data: rooms
     });
   } catch (error: any) {
@@ -298,6 +318,131 @@ export const updateRoomStatus = async (req: Request, res: Response) => {
     res.status(statusCode).json({
       success: false,
       message: "Error updating room status",
+      error: error.message
+    });
+  }
+};
+
+export const getRoomSchedule = async (req: Request, res: Response) => {
+  try {
+    const roomId = req.params.id;
+    const { date, start_date, end_date } = req.query;
+
+    if (!roomId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Room ID is required'
+      });
+    }
+
+    // Check if room exists
+    const room = await RoomService.getRoomById(roomId);
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: 'Room not found'
+      });
+    }
+
+    const schedule = await RoomService.getRoomSchedule(
+      roomId, 
+      date as string, 
+      start_date as string, 
+      end_date as string
+    );
+
+    let message = `Schedule for room "${room.name}" retrieved successfully`;
+    if (date) {
+      message = `Schedule for room "${room.name}" on ${date} retrieved successfully`;
+    } else if (start_date && end_date) {
+      message = `Schedule for room "${room.name}" from ${start_date} to ${end_date} retrieved successfully`;
+    }
+
+    res.status(200).json({
+      success: true,
+      message,
+      room: {
+        id: room._id,
+        name: room.name,
+        location: room.location,
+        capacity: room.capacity
+      },
+      schedule: {
+        bookings: schedule,
+        count: schedule.length,
+        dateRange: {
+          date: date || null,
+          start_date: start_date || null,
+          end_date: end_date || null
+        }
+      }
+    });
+
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving room schedule',
+      error: error.message
+    });
+  }
+};
+
+export const checkRoomAvailability = async (req: Request, res: Response) => {
+  try {
+    const roomId = req.params.id;
+    const { start_time, end_time } = req.query;
+
+    if (!roomId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Room ID is required'
+      });
+    }
+
+    if (!start_time || !end_time) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both start_time and end_time are required'
+      });
+    }
+
+    // Check if room exists
+    const room = await RoomService.getRoomById(roomId);
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: 'Room not found'
+      });
+    }
+
+    const isAvailable = await RoomService.isRoomAvailableForPeriod(
+      roomId,
+      new Date(start_time as string),
+      new Date(end_time as string)
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `Room availability checked for ${start_time} to ${end_time}`,
+      room: {
+        id: room._id,
+        name: room.name,
+        location: room.location
+      },
+      availability: {
+        isAvailable,
+        timeSlot: {
+          start_time,
+          end_time
+        },
+        status: isAvailable ? 'available' : 'occupied'
+      }
+    });
+
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Error checking room availability',
       error: error.message
     });
   }

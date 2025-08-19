@@ -145,9 +145,13 @@ class AuthService {
     }
 
     // Change password for logged-in users with additional verification
-    async changePassword(userId: string, email: string, currentPassword: string, newPassword: string) {
+    async changePassword( email: string, currentPassword: string, newPassword: string) {
         const user = await User.findOne({
-            _id: userId
+             email: email.toLowerCase(),
+        $or: [
+            { isDeleted: false },
+            { isDeleted: { $exists: false } }
+        ],
         });
 
         if (!user) {

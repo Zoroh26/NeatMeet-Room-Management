@@ -167,28 +167,19 @@ export const resetUserPassword = async (req: Request, res: Response) => {
 };
 
 // Add this to auth.controller.ts
+// Update the changePassword controller in: backend/src/api/auth/v1/auth.controller.ts
 export const changePassword = async (req: Request, res: Response) => {
     try {
-        const { userId, email, currentPassword, newPassword } = req.body;
-        const tokenUserId = (req as any).user?.userId;
+        const { email, currentPassword, newPassword } = req.body;
 
-        // Validate required fields
-        if (!userId || !email || !currentPassword || !newPassword) {
+        if (!email || !currentPassword || !newPassword) {
             return res.status(400).json({
                 success: false,
-                message: 'User ID, email, current password, and new password are required'
+                message: 'Email, current password, and new password are required'
             });
         }
 
-        // Ensure the user can only change their own password
-        if (tokenUserId !== userId) {
-            return res.status(403).json({
-                success: false,
-                message: 'You can only change your own password'
-            });
-        }
-
-        const result = await authService.changePassword(userId, email, currentPassword, newPassword);
+        const result = await authService.changePassword(email, currentPassword, newPassword);
         
         res.status(200).json({
             success: true,
@@ -200,8 +191,6 @@ export const changePassword = async (req: Request, res: Response) => {
         let statusCode = 400;
         if (error.message.includes('User not found')) statusCode = 404;
         if (error.message.includes('Current password is incorrect')) statusCode = 401;
-        if (error.message.includes('Email verification failed')) statusCode = 403;
-        if (error.message.includes('must be different')) statusCode = 400;
         
         res.status(statusCode).json({
             success: false,
