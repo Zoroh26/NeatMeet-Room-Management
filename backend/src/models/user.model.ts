@@ -70,7 +70,8 @@ userSchema.pre('save',async function(next){
   if(!this.isModified('password'))return next();
 
   try{
-    const saltRounds = 12;
+    // Use lower salt rounds in test environment for faster execution
+    const saltRounds = process.env.NODE_ENV === 'test' ? 1 : 12;
     this.password = await bcrypt.hash(this.password,saltRounds)
   }catch(error:any){
     next(error);
@@ -81,7 +82,8 @@ userSchema.pre('findOneAndUpdate',async function(next){
   const update =this.getUpdate() as any
  if(update.password) {
   try{
-    const saltRounds=12;
+    // Use lower salt rounds in test environment for faster execution
+    const saltRounds = process.env.NODE_ENV === 'test' ? 1 : 12;
     update.password =await bcrypt.hash(update.password,saltRounds);
     next();
   }catch(error:any){

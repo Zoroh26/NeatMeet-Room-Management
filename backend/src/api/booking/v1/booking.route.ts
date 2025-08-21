@@ -1,7 +1,7 @@
 import {Router} from 'express'
-import { authenticateToken, authorize } from '../../../middlwares/auth.middleware'
+import { authenticateToken, authorize } from '../../../middlewares/auth.middleware'
 
-import { requirePasswordChange } from '../../../middlwares/password-change.middleware'
+import { requirePasswordChange } from '../../../middlewares/password-change.middleware'
 import { 
     createBooking, 
     getBookings, 
@@ -22,12 +22,12 @@ router.get('/', getBookings);                                      // Get all bo
 router.get('/:id', getBookingById);                               // Get single booking by ID
 
 // POST routes  
-router.post('/', validateCreateBooking, createBooking);           // Create new booking
+router.post('/booking', validateCreateBooking, createBooking);           // Create new booking
 
 // PUT routes
 router.put('/:id', validateUpdateBooking, updateBooking);         // Update booking
 
 // PATCH routes (for specific actions)
-router.patch('/:id/cancel', cancelBooking);                       // Cancel booking
+router.patch('/:id', cancelBooking);                       // Cancel booking
 
 module.exports = router;

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "nodemon --watch src --exec tsx src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "author": "rohith",
   "license": "ISC",
@@ -22,15 +25,23 @@
     "nodemailer": "^7.0.5"
   },
   "devDependencies": {
+    "@jest/globals": "^30.0.5",
+    "@swc/core": "^1.13.4",
+    "@swc/jest": "^0.2.39",
     "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^4.17.17",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/mongoose": "^5.11.97",
     "@types/node": "^24.2.0",
     "@types/nodemailer": "^6.4.17",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.0.5",
     "nodemon": "^3.0.1",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.1",
     "ts-node": "^10.9.1",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"

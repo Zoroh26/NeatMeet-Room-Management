@@ -7,9 +7,9 @@ const bookingRoutes = require("./booking/v1/booking.route")
 const router = express.Router();
 
 // API Routes
-router.use('/v1/users', userRoutes);
-router.use('/v1/rooms', roomRoutes);
-router.use('/v1/auth', authRoutes);
-router.use('/v1/bookings', bookingRoutes);
+router.use('/users/v1', userRoutes);
+router.use('/rooms/v1', roomRoutes);
+router.use('/auth/v1', authRoutes);
+router.use('/bookings/v1', bookingRoutes);
 
 module.exports = router;

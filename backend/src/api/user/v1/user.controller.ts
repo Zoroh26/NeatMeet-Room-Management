@@ -95,22 +95,36 @@ export const getUserById = async (req: Request, res: Response) => {
 export const createUser = async (req: Request, res: Response) => {
   try {
     const { name, email, password, role, designation } = req.body;
+    const adminUserId = (req as any).user?.userId;
+
+    if (!name || !email || !password || !designation) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, password, and designation are required'
+      });
+    }
 
     const userData = await UserService.createUser({
       name,
       email,
       password,
-      role,
+      role: role || 'employee',
       designation
     });
 
     res.status(201).json({
       success: true,
       message: 'User created successfully',
-      data: userData
+      data: {
+        user: userData,
+        createdBy: adminUserId
+      }
     });
   } catch (error: any) {
-    const statusCode = error.message.includes('already exists') ? 400 : 500;
+    let statusCode = 500;
+    if (error.message.includes('already exists')) statusCode = 409;
+    if (error.message.includes('Only administrators')) statusCode = 403;
+    
     res.status(statusCode).json({
       success: false,
       message: 'Error creating user',

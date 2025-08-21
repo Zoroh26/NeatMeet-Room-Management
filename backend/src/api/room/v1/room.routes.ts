@@ -18,8 +18,8 @@ import {
   createRoomValidation,
   handleValidationErrors
 } from './room.validation';
-import { authenticateToken } from '../../../middlwares/auth.middleware';
-import { allowPasswordChangeRoutes } from '../../../middlwares/password-change.middleware';
+import { authenticateToken } from '../../../middlewares/auth.middleware';
+import { allowPasswordChangeRoutes } from '../../../middlewares/password-change.middleware';
 
 const router = Router();
 
@@ -28,24 +28,24 @@ router.use(authenticateToken);
 router.use(allowPasswordChangeRoutes);
 
 // GET routes
-router.get('/', getRooms);                         
+router.get('/rooms', getRooms);                         
 router.get('/all', getAllRooms);                   
 router.get('/deleted', getDeletedRooms);           
 router.get('/available', getAvailableRooms);       
 router.get('/:id', getRoomById);
-router.get('/:id/schedule', getRoomSchedule);      
-router.get('/:id/availability', checkRoomAvailability);  
+router.get('/schedule/:id', getRoomSchedule);      
+router.get('/availability/:id', checkRoomAvailability);  
 
 // POST routes
-router.post('/', createRoomValidation, handleValidationErrors, createRoom);  
+router.post('/room', createRoomValidation, handleValidationErrors, createRoom);  
 
 // PUT routes  
 router.put('/:id', updateRoom);
-router.put('/:id/status', updateRoomStatus);  
-router.put('/:id/restore', restoreRoom);  
+router.put('/status/:id', updateRoomStatus);  
+router.put('/restore/:id', restoreRoom);  
 
 // DELETE routes
 router.delete('/:id', deleteRoom);  
-router.delete('/:id/hard', hardDeleteRoom);  
+router.delete('/hard/:id', hardDeleteRoom);  
 
 module.exports = router;
