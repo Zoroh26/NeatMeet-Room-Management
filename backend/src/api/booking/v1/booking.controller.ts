@@ -300,7 +300,7 @@ export const updateBooking = async (req: Request, res: Response) => {
             });
         }
 
-        if (error.message.includes('only update your own') || error.message.includes('authorization')) {
+        if (error.message.includes('only update your own') || error.message.includes('authorization') || error.message.includes('can only update')) {
             return res.status(403).json({
                 success: false,
                 code: "FORBIDDEN",
@@ -392,7 +392,7 @@ export const cancelBooking = async (req: Request, res: Response) => {
             });
         }
 
-        if (error.message.includes('only cancel your own')) {
+        if (error.message.includes('only cancel your own') || error.message.includes('can only cancel')) {
             return res.status(403).json({
                 success: false,
                 code: "FORBIDDEN",

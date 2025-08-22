@@ -144,44 +144,5 @@ export class UserService {
     };
   }
 
-  // Hard delete user
-  static async hardDeleteUser(userId: string): Promise<{
-    deletedUserId: string;
-    deletedUserEmail: string;
-  }> {
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
 
-    await User.findByIdAndDelete(userId);
-
-    return {
-      deletedUserId: userId,
-      deletedUserEmail: user.email
-    };
-  }
-
-  // Restore user
-  static async restoreUser(userId: string): Promise<any> {
-    const user = await User.findOne({
-      _id: userId,
-      isDeleted: true
-    });
-
-    if (!user) {
-      throw new Error('Deleted user not found');
-    }
-
-    const restoredUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        isDeleted: false,
-        deletedAt: null
-      },
-      { new: true }
-    ).select('-password');
-
-    return restoredUser;
-  }
 }

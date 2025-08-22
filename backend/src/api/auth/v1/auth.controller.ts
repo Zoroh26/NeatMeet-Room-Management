@@ -1,12 +1,20 @@
 import { Request, Response } from 'express';
 import { authService } from './auth.services';
+import { logger } from '../../../utils/logger';
 
 export const login = async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
 
+        logger.info('Login attempt', { 
+            email, 
+            ip: req.ip, 
+            userAgent: req.get('User-Agent') 
+        });
+
         // Basic validation
         if (!email || !password) {
+            logger.warn('Login failed: Missing credentials', { email, ip: req.ip });
             return res.status(400).json({
                 success: false,
                 message: 'Email and password are required'
@@ -14,6 +22,12 @@ export const login = async (req: Request, res: Response) => {
         }
 
         const result = await authService.loginUser({ email, password });
+
+        logger.info('Login successful', { 
+            email, 
+            userId: result.user?.id, 
+            ip: req.ip 
+        });
 
         res.cookie('token', result.token, {
             httpOnly: true,
@@ -33,6 +47,13 @@ export const login = async (req: Request, res: Response) => {
         });
 
     } catch (error: any) {
+        logger.error('Login failed', {
+            error: error.message,
+            email: req.body.email,
+            ip: req.ip,
+            userAgent: req.get('User-Agent')
+        });
+        
         res.status(401).json({
             success: false,
             message: error.message
@@ -40,47 +61,7 @@ export const login = async (req: Request, res: Response) => {
     }
 };
 
-export const register = async (req: Request, res: Response) => {
-    try {
-        const { name, email, password, role, designation } = req.body;  // ✅ Password from request
-        const adminUserId = (req as any).user?.userId;
 
-        if (!name || !email || !password || !designation) {  // ✅ Password is now required
-            return res.status(400).json({
-                success: false,
-                message: 'Name, email, password, and designation are required'
-            });
-        }
-
-        const result = await authService.registerUserByAdmin({
-            name,
-            email,
-            password,  // ✅ Pass admin-provided password
-            role: role || 'employee',
-            designation
-        }, adminUserId);
-
-        res.status(201).json({
-            success: true,
-            message: result.message,
-            data: {
-                user: result.user,
-                createdBy: result.createdBy
-            }
-        });
-
-    } catch (error: any) {
-        let statusCode = 500;
-        if (error.message.includes('already exists')) statusCode = 409;
-        if (error.message.includes('Only administrators')) statusCode = 403;
-        if (error.message.includes('Failed to send')) statusCode = 500;
-        
-        res.status(statusCode).json({
-            success: false,
-            message: error.message
-        });
-    }
-};
 export const logout = async (req: Request, res: Response) => {
     try {
         res.clearCookie('token');
@@ -126,60 +107,30 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     }
 };
 
-export const resetUserPassword = async (req: Request, res: Response) => {
-    try {
-        const { userId } = req.params;
-        const { newPassword } = req.body;
-        const adminUserId = (req as any).user?.userId;
 
-        if (!newPassword) {
-            return res.status(400).json({
-                success: false,
-                message: 'New password is required'
-            });
-        }
-
-        if (!adminUserId) {
-            return res.status(401).json({
-                success: false,
-                message: 'Authentication required'
-            });
-        }
-
-        const result = await authService.resetUserPassword(userId!, newPassword, adminUserId);
-        
-        res.status(200).json({
-            success: true,
-            message: result.message,
-            data: result.user
-        });
-
-    } catch (error: any) {
-        let statusCode = 500;
-        if (error.message.includes('Only administrators')) statusCode = 403;
-        if (error.message.includes('User not found')) statusCode = 404;
-        
-        res.status(statusCode).json({
-            success: false,
-            message: error.message
-        });
-    }
-};
 
 // Add this to auth.controller.ts
 // Update the changePassword controller in: backend/src/api/auth/v1/auth.controller.ts
 export const changePassword = async (req: Request, res: Response) => {
     try {
-        const { email, currentPassword, newPassword } = req.body;
+        const { currentPassword, newPassword } = req.body;
+        const userId = (req as any).user?.userId; // Get userId from JWT token
 
-        if (!email || !currentPassword || !newPassword) {
+        if (!currentPassword || !newPassword) {
             return res.status(400).json({
                 success: false,
-                message: 'Email, current password, and new password are required'
+                message: 'Current password and new password are required'
             });
         }
 
-        const result = await authService.changePassword(email, currentPassword, newPassword);
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+        }
+
+        const result = await authService.changePasswordByUserId(userId, currentPassword, newPassword);
         
         res.status(200).json({
             success: true,

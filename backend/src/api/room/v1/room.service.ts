@@ -10,48 +10,21 @@ export class RoomService {
       ]
     });
 
-    // If no time filter specified, return rooms with current availability
-    if (!startTime || !endTime) {
-      const roomsWithAvailability = await Promise.all(
-        rooms.map(async (room: any) => {
-          const isCurrentlyBooked = await this.isRoomCurrentlyBooked(room._id);
-          return {
-            ...room.toObject(),
-            isCurrentlyAvailable: !isCurrentlyBooked,
-            dynamicStatus: isCurrentlyBooked ? 'occupied' : room.status === 'available' ? 'available' : room.status
-          };
-        })
-      );
-
-      return filterAvailable 
-        ? roomsWithAvailability.filter(room => room.isCurrentlyAvailable && room.status === 'available')
-        : roomsWithAvailability;
-    }
-
-    // Check availability for specific time period
-    const roomsWithTimeBasedAvailability = await Promise.all(
+    // Return rooms with current availability (ignoring time filters for simplicity)
+    const roomsWithAvailability = await Promise.all(
       rooms.map(async (room: any) => {
-        const isAvailableForPeriod = await this.isRoomAvailableForPeriod(
-          room._id, 
-          new Date(startTime), 
-          new Date(endTime)
-        );
-        
+        const isCurrentlyBooked = await this.isRoomCurrentlyBooked(room._id);
         return {
           ...room.toObject(),
-          isAvailableForPeriod,
-          requestedTimeSlot: {
-            start: startTime,
-            end: endTime
-          },
-          dynamicStatus: !isAvailableForPeriod ? 'occupied' : room.status === 'available' ? 'available' : room.status
+          isCurrentlyAvailable: !isCurrentlyBooked,
+          dynamicStatus: isCurrentlyBooked ? 'occupied' : room.status === 'available' ? 'available' : room.status
         };
       })
     );
 
     return filterAvailable 
-      ? roomsWithTimeBasedAvailability.filter(room => room.isAvailableForPeriod && room.status === 'available')
-      : roomsWithTimeBasedAvailability;
+      ? roomsWithAvailability.filter(room => room.isCurrentlyAvailable && room.status === 'available')
+      : roomsWithAvailability;
   }
 
   /**
@@ -68,100 +41,6 @@ export class RoomService {
     });
 
     return !!activeBooking;
-  }
-
-  /**
-   * Check if room is available for a specific time period
-   */
-  static async isRoomAvailableForPeriod(roomId: string, startTime: Date, endTime: Date): Promise<boolean> {
-    // Check if room itself is available (not in maintenance, etc.)
-    const room = await Room.findById(roomId);
-    if (!room || room.status !== 'available') {
-      return false;
-    }
-
-    // Check for overlapping bookings
-    const overlappingBooking = await Booking.findOne({
-      room_id: roomId,
-      status: { $in: ['scheduled', 'confirmed'] },
-      $or: [
-        // Booking starts during the requested period
-        {
-          start_time: { $gte: startTime, $lt: endTime }
-        },
-        // Booking ends during the requested period
-        {
-          end_time: { $gt: startTime, $lte: endTime }
-        },
-        // Booking completely encompasses the requested period
-        {
-          start_time: { $lte: startTime },
-          end_time: { $gte: endTime }
-        },
-        // Requested period completely encompasses the booking
-        {
-          start_time: { $gte: startTime },
-          end_time: { $lte: endTime }
-        }
-      ]
-    });
-
-    return !overlappingBooking;
-  }
-
-  /**
-   * Get room's booking schedule for a specific date or date range
-   */
-  static async getRoomSchedule(roomId: string, date?: string, startDate?: string, endDate?: string): Promise<any> {
-    let dateFilter: any = {};
-
-    if (date) {
-      // Single date
-      const targetDate = new Date(date);
-      const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
-      
-      dateFilter = {
-        $or: [
-          { start_time: { $gte: startOfDay, $lte: endOfDay } },
-          { end_time: { $gte: startOfDay, $lte: endOfDay } },
-          { 
-            start_time: { $lte: startOfDay },
-            end_time: { $gte: endOfDay }
-          }
-        ]
-      };
-    } else if (startDate && endDate) {
-      // Date range
-      dateFilter = {
-        $or: [
-          { start_time: { $gte: new Date(startDate), $lte: new Date(endDate) } },
-          { end_time: { $gte: new Date(startDate), $lte: new Date(endDate) } },
-          { 
-            start_time: { $lte: new Date(startDate) },
-            end_time: { $gte: new Date(endDate) }
-          }
-        ]
-      };
-    } else {
-      // Default to next 7 days
-      const now = new Date();
-      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
-      dateFilter = {
-        start_time: { $gte: now, $lte: nextWeek }
-      };
-    }
-
-    const bookings = await Booking.find({
-      room_id: roomId,
-      status: { $in: ['scheduled', 'confirmed'] },
-      ...dateFilter
-    })
-    .populate('user_id', 'name email')
-    .sort({ start_time: 1 });
-
-    return bookings;
   }
 
   static async getAllRooms(): Promise<any[]> {
@@ -317,45 +196,7 @@ export class RoomService {
     };
   }
 
-  static async hardDeleteRoom(roomId: string): Promise<{
-    deletedRoomId: string;
-    deletedRoomName: string;
-  }> {
-    const room = await Room.findById(roomId);
-    if (!room) {
-      throw new Error('Room not found');
-    }
-
-    await Room.findByIdAndDelete(roomId);
-
-    return {
-      deletedRoomId: roomId,
-      deletedRoomName: room.name
-    };
-  }
-
-  static async restoreRoom(roomId: string): Promise<any> {
-    const room = await Room.findOne({
-      _id: roomId,
-      isDeleted: true
-    });
-
-    if (!room) {
-      throw new Error('Deleted room not found');
-    }
-
-    const restoredRoom = await Room.findByIdAndUpdate(
-      roomId,
-      {
-        isDeleted: false,
-        deletedAt: null
-      },
-      { new: true }
-    );
-
-    return restoredRoom;
-  }
-
+  
   static async getAvailableRooms(): Promise<any[]> {
     return await Room.find({
       status: 'available',

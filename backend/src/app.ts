@@ -2,6 +2,7 @@ import express = require('express');
 const dotenv = require('dotenv');
 const apiRoutes = require('./api');
 const cookieParser = require('cookie-parser');
+import errorHandler from './middlewares/errorHandler.middleware';
 
 dotenv.config();
 
@@ -44,5 +45,8 @@ app.use('*', (req, res) => {
     message: 'Route not found' 
   });
 });
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 module.exports = app;

@@ -7,12 +7,6 @@ import {
   createRoom,
   updateRoom,
   deleteRoom,
-  hardDeleteRoom,
-  restoreRoom,
-  getAvailableRooms,
-  updateRoomStatus,
-  getRoomSchedule,
-  checkRoomAvailability
 } from './room.controller';
 import {
   createRoomValidation,
@@ -31,21 +25,18 @@ router.use(allowPasswordChangeRoutes);
 router.get('/rooms', getRooms);                         
 router.get('/all', getAllRooms);                   
 router.get('/deleted', getDeletedRooms);           
-router.get('/available', getAvailableRooms);       
-router.get('/:id', getRoomById);
-router.get('/schedule/:id', getRoomSchedule);      
-router.get('/availability/:id', checkRoomAvailability);  
+    
+router.get('/:id', getRoomById);  
 
 // POST routes
 router.post('/room', createRoomValidation, handleValidationErrors, createRoom);  
 
 // PUT routes  
 router.put('/:id', updateRoom);
-router.put('/status/:id', updateRoomStatus);  
-router.put('/restore/:id', restoreRoom);  
+
 
 // DELETE routes
 router.delete('/:id', deleteRoom);  
-router.delete('/hard/:id', hardDeleteRoom);  
+
 
 module.exports = router;
