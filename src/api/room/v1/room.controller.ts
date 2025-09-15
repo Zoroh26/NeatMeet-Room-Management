@@ -245,3 +245,75 @@ export const updateRoomStatus = async (req: Request, res: Response) => {
     });
   }
 };
+
+// NEW: Check room availability endpoint
+export const checkAvailability = async (req: Request, res: Response) => {
+  try {
+    const { start_time, end_time } = req.query;
+
+    // Validate required parameters
+    if (!start_time || !end_time) {
+      return res.status(400).json({
+        success: false,
+        code: "MISSING_PARAMETERS",
+        message: "start_time and end_time are required parameters"
+      });
+    }
+
+    // Validate date format
+    const startDate = new Date(start_time as string);
+    const endDate = new Date(end_time as string);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_DATE_FORMAT",
+        message: "start_time and end_time must be valid ISO date strings"
+      });
+    }
+
+    // Validate time logic
+    if (startDate >= endDate) {
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_TIME_RANGE",
+        message: "start_time must be before end_time"
+      });
+    }
+
+    // Check if time is in the past
+    const now = new Date();
+    if (startDate < now) {
+      return res.status(400).json({
+        success: false,
+        code: "PAST_TIME",
+        message: "Cannot check availability for past time"
+      });
+    }
+
+    console.log(`🔍 Checking room availability from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+
+    const availableRooms = await RoomService.getAvailableRooms(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      message: `Found ${availableRooms.length} available rooms for the requested time slot`,
+      timeSlot: {
+        start_time: startDate.toISOString(),
+        end_time: endDate.toISOString(),
+        duration_minutes: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60))
+      },
+      totalAvailable: availableRooms.length,
+      data: availableRooms
+    });
+
+  } catch (error: any) {
+    console.error("Check availability error:", error);
+    res.status(500).json({
+      success: false,
+      code: "AVAILABILITY_CHECK_ERROR",
+      message: "Error checking room availability",
+      error: error.message
+    });
+  }
+};

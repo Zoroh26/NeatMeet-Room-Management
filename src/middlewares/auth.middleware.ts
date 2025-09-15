@@ -17,6 +17,15 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
             token = req.headers.authorization.split(' ')[1];
         }
 
+        // Debug logging
+        logger.info('Token debug', {
+            hasAuthHeader: !!req.headers.authorization,
+            authHeader: req.headers.authorization ? req.headers.authorization.substring(0, 30) + '...' : 'none',
+            tokenLength: token ? token.length : 0,
+            tokenStart: token ? token.substring(0, 20) + '...' : 'none',
+            url: req.url
+        });
+
         if (!token) {
             logger.warn('Authentication failed: No token provided', {
                 url: req.url,

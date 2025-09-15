@@ -7,6 +7,7 @@ import {
   createRoom,
   updateRoom,
   deleteRoom,
+  checkAvailability,
 } from './room.controller';
 import {
   createRoomValidation,
@@ -24,7 +25,8 @@ router.use(allowPasswordChangeRoutes);
 // GET routes
 router.get('/rooms', getRooms);                         
 router.get('/all', getAllRooms);                   
-router.get('/deleted', getDeletedRooms);           
+router.get('/deleted', getDeletedRooms);
+router.get('/check-availability', checkAvailability);
     
 router.get('/:id', getRoomById);  
 

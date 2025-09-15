@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken,authorize } from '../../../middlewares/auth.middleware';
+import { authenticateToken, authorize } from '../../../middlewares/auth.middleware';
 import { login, logout, getCurrentUser, changePassword } from './auth.controller';
 import { validateLogin, validateChangePassword } from './auth.validation';
 

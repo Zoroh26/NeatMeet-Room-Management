@@ -80,18 +80,16 @@ export const logout = async (req: Request, res: Response) => {
 
 export const getCurrentUser = async (req: Request, res: Response) => {
     try {
-        // Get user ID from authenticated request (requires auth middleware)
-        const userId = (req as any).user?.userId;
+        // Get user from authenticated request (requires auth middleware)
+        const user = (req as any).user;
         
-        if (!userId) {
+        if (!user) {
             return res.status(401).json({
                 success: false,
                 message: "Authentication required"
             });
         }
 
-        const user = await authService.getUserById(userId);
-        
         res.status(200).json({
             success: true,
             message: "User retrieved successfully",
@@ -114,7 +112,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 export const changePassword = async (req: Request, res: Response) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        const userId = (req as any).user?.userId; // Get userId from JWT token
+        const userId = (req as any).user?._id; // Get userId from authenticated user object
 
         if (!currentPassword || !newPassword) {
             return res.status(400).json({

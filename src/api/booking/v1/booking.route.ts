@@ -28,6 +28,6 @@ router.post('/booking', validateCreateBooking, createBooking);           // Crea
 router.put('/:id', validateUpdateBooking, updateBooking);         // Update booking
 
 // PATCH routes (for specific actions)
-router.patch('/:id', cancelBooking);                       // Cancel booking
+router.delete('/:id', cancelBooking);                       // Cancel booking
 
 module.exports = router;

@@ -3,21 +3,12 @@ const User = require('../models/user.model');
 
 export const requirePasswordChange = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = (req as any).user?.userId;
+        const user = (req as any).user;
         
-        if (!userId) {
+        if (!user) {
             return res.status(401).json({
                 success: false,
                 message: 'Authentication required'
-            });
-        }
-
-        const user = await User.findById(userId);
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
             });
         }
 
@@ -42,9 +33,9 @@ export const requirePasswordChange = async (req: Request, res: Response, next: N
 export const allowPasswordChangeRoutes = (req: Request, res: Response, next: NextFunction) => {
     // Allow access to password change routes even if password change is required
     const allowedRoutes = [
-        '/api/v1/auth/change-password',
-        '/api/v1/auth/me',
-        '/api/v1/auth/logout'
+        '/api/auth/v1/change-password',
+        '/api/auth/v1/me',
+        '/api/auth/v1/logout'
     ];
     
     if (allowedRoutes.includes(req.path)) {

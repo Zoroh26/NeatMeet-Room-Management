@@ -197,14 +197,81 @@ export class RoomService {
   }
 
   
-  static async getAvailableRooms(): Promise<any[]> {
-    return await Room.find({
-      status: 'available',
+  static async getAvailableRooms(startTime?: Date, endTime?: Date): Promise<any[]> {
+    try {
+      // Get all active (non-deleted) rooms that are marked as available
+      const allRooms = await Room.find({
+        $or: [
+          { isDeleted: false },
+          { isDeleted: { $exists: false } }
+        ],
+        status: 'available' // Only check rooms that are marked as available
+      });
+
+      // If no time range provided, return all available rooms
+      if (!startTime || !endTime) {
+        return allRooms.map((room: any) => ({
+          _id: room._id,
+          name: room.name,
+          location: room.location,
+          capacity: room.capacity,
+          description: room.description,
+          amenities: room.amenities,
+          status: room.status,
+          isAvailable: true
+        }));
+      }
+
+      // Check each room for conflicts during the requested time
+      const availableRooms = await Promise.all(
+        allRooms.map(async (room: any) => {
+          const hasConflict = await this.hasBookingConflict(room._id, startTime, endTime);
+          
+          if (!hasConflict) {
+            return {
+              _id: room._id,
+              name: room.name,
+              location: room.location,
+              capacity: room.capacity,
+              description: room.description,
+              amenities: room.amenities,
+              status: room.status,
+              isAvailable: true,
+              availableFor: {
+                start_time: startTime,
+                end_time: endTime,
+                duration_minutes: Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60))
+              }
+            };
+          }
+          return null;
+        })
+      );
+
+      // Filter out null values (rooms with conflicts)
+      return availableRooms.filter(room => room !== null);
+
+    } catch (error) {
+      console.error("Error checking room availability:", error);
+      throw error;
+    }
+  }
+
+  // Helper method to check if a room has booking conflicts
+  private static async hasBookingConflict(roomId: string, startTime: Date, endTime: Date): Promise<boolean> {
+    const conflictingBooking = await Booking.findOne({
+      room_id: roomId,
+      status: { $in: ['scheduled', 'in progress', 'confirmed'] },
       $or: [
-        { isDeleted: false },
-        { isDeleted: { $exists: false } }
+        // New booking starts before existing ends AND new booking ends after existing starts
+        {
+          start_time: { $lt: endTime },
+          end_time: { $gt: startTime }
+        }
       ]
     });
+
+    return !!conflictingBooking;
   }
 
   static async updateRoomStatus(roomId: string, status: string): Promise<any> {

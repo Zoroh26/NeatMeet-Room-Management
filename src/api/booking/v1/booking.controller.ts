@@ -4,8 +4,8 @@ import { bookingService } from './booking.service'; // Fixed import path
 export const createBooking = async (req: Request, res: Response) => {
     try {
         const { room_id, start_time, end_time, purpose } = req.body;
-        // Extract user_id from JWT token payload for security
-        const user_id = (req as any).user?.userId;
+    // Extract user_id from JWT token payload for security
+    const user_id = (req as any).user?._id?.toString();
 
         // Validate required fields (user_id now comes from token)
         if (!room_id || !start_time || !end_time || !purpose) {
@@ -242,8 +242,8 @@ export const updateBooking = async (req: Request, res: Response) => {
     try {
         const bookingId = req.params.id;
         const updateData = req.body;
-        // FIXED: Changed to userId to match the token payload structure
-        const requestingUserId = (req as any).user?.userId; // From auth middleware
+    // FIXED: Changed to userId to match the token payload structure
+    const requestingUserId = (req as any).user?._id?.toString(); // From auth middleware
 
         // Validate booking ID
         if (!bookingId) {
@@ -338,8 +338,8 @@ export const updateBooking = async (req: Request, res: Response) => {
 export const cancelBooking = async (req: Request, res: Response) => {
     try {
         const bookingId = req.params.id;
-        // FIXED: Changed from _id to userId to match the token payload structure
-        const requestingUserId = (req as any).user?.userId; // From auth middleware
+    // FIXED: Changed from _id to userId to match the token payload structure
+    const requestingUserId = (req as any).user?._id?.toString(); // From auth middleware
 
         // Validate booking ID
         if (!bookingId) {
