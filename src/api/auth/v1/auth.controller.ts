@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { authService } from './auth.services';
 import { logger } from '../../../utils/logger';
+import { emailService } from '../../../utils/email.util';
+import crypto from 'crypto';
+
+const User = require('../../../models/user.model');
 
 export const login = async (req: Request, res: Response) => {
     try {
@@ -147,3 +151,36 @@ export const changePassword = async (req: Request, res: Response) => {
         });
     }
 };
+
+export const forgetPassword = async (req:Request, res:Response) =>{
+    const { email } = req.body;
+    try{
+        await authService.forgetPassword(email);
+        res.status(200).json({
+            success:true,
+            message:"OTP sent to email"
+        });
+    }catch(error:any){
+        res.status(400).json({
+            success:false,
+            message:error.message
+        });
+    }
+}
+
+export const verifyOtp = async (req:Request, res:Response)=>{
+    const {email, otp, newPassword} = req.body;
+    try{
+        await authService.verifyOtp(email, otp, newPassword);
+        res.status(200).json({
+            success:true,
+            message:"Password reset successful"
+        });
+    }catch(error:any){
+        res.status(400).json({
+            success:false,
+            message:error.message
+        });
+    }
+}
+

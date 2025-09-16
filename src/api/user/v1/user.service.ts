@@ -1,4 +1,5 @@
 const User = require('../../../models/user.model');
+import { emailService } from '../../../utils/email.util';
 
 export class UserService {
   // GET active users
@@ -64,6 +65,15 @@ export class UserService {
     });
 
     await newUser.save();
+
+    // Send welcome email with credentials
+    const { email: userEmail, name: userName, role: userRole } = newUser;
+    const temporaryPassword = password;
+    try {
+      await emailService.sendWelcomeEmail({ email: userEmail, name: userName, role: userRole }, temporaryPassword);
+    } catch (err) {
+      console.error(`Failed to send welcome email to ${userEmail}:`, err);
+    }
 
     
     const userResponse = newUser.toObject();

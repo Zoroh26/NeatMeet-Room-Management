@@ -14,6 +14,8 @@ interface IUser extends mongoose.Document {
   updatedAt:Date;
   comparePassword(candidatePassword:string):Promise<boolean>;
   isInitialPassword:Boolean;
+  resetOtp?: string;
+  resetOtpExpiry?: Date;
 }
 
 const userSchema = new Schema<IUser>({
@@ -58,7 +60,9 @@ const userSchema = new Schema<IUser>({
   isInitialPassword:{
     type:Boolean,
     default:true
-  }
+  },
+  resetOtp: { type: String },
+  resetOtpExpiry: { type: Date },
   
 
 }, { timestamps: true });

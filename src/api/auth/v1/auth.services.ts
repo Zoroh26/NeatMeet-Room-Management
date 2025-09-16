@@ -4,8 +4,10 @@ dotenv.config();
 
 import * as bcrypt from 'bcrypt';
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 import { formatUserResponse } from '../../../utils/response.util';
-import { logger } from '../../../utils/logger';
+import { emailService } from '../../../utils/email.util';
+import { Otp } from '../../../models/otp.model';
 
 const User = require('../../../models/user.model');
 
@@ -150,7 +152,56 @@ class AuthService {
         return formatUserResponse(user);
     }
 
-    
+    async forgetPassword(email:string){
+        if(!email){
+            throw new Error("Email is required");
+        }
+        const user = await User.findOne({
+            email:email.toLowerCase()
+        })
+        if(!user){
+            throw new Error("User not found")
+        }
+    // Generate secure OTP using crypto
+   
+    const otp = crypto.randomInt(100000, 1000000).toString();
+    const saltRounds = process.env.NODE_ENV === "test" ? 1 : 12;
+    const hashedOtp = await bcrypt.hash(otp, saltRounds);
+    const otpExpiry = new Date(Date.now() + 10*60*1000); // 10 minutes from now
+    await Otp.create({ email: user.email, otp: hashedOtp, expiry: otpExpiry });
+    await emailService.transporter.sendMail({
+        from: process.env.SMTP_USER,
+        to: user.email,
+        subject: 'Password Reset OTP',
+        html: `<p>Your OTP for password reset is <b>${otp}</b>. It is valid for 10 minutes.</p>`
+    });
+    }
+
+    async verifyOtp(email:string,otp:string,newPassword:string){
+        if(!email || !otp || !newPassword){
+            throw new Error("Email, OTP and new password are required");
+        }
+        const user = await User.findOne({
+            email:email.toLowerCase(),
+        })
+        if(!user){
+            throw new Error("User not found");
+        }
+    const otpDoc = await Otp.findOne({ email: user.email });
+    if (!otpDoc) throw new Error('Invalid OTP');
+    if (otpDoc.expiry < new Date()) throw new Error('OTP expired');
+    // Compare provided OTP with hashed OTP
+    const isOtpValid = await bcrypt.compare(otp, otpDoc.otp);
+    if (!isOtpValid) throw new Error('Invalid OTP');
+        user.password = newPassword; // Let Mongoose pre-save hook hash it
+        if (user.isInitialPassword) {
+            user.isInitialPassword = false;
+        }
+        await user.save();
+        await Otp.deleteOne({ _id: otpDoc._id });
+    }
+
+
 }
 
 export const authService = new AuthService();

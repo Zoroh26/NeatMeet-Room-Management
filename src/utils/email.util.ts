@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 class EmailService{
-    private transporter: nodemailer.Transporter;
+    public transporter: nodemailer.Transporter;
 
     constructor(){
        // Debug email configuration
@@ -102,10 +102,13 @@ class EmailService{
         }
 
         try {
-            await this.transporter.sendMail(mailOptions);
-            console.log(`✅ Welcome email sent to ${user.email}`);
+            console.log(`📧 Attempting to send welcome email to ${user.email}...`);
+            const result = await this.transporter.sendMail(mailOptions);
+            console.log(`✅ Welcome email sent successfully to ${user.email}. MessageId: ${result.messageId}`);
+            return result;
         }catch(error:any){
             console.error(`❌ Failed to send welcome email to ${user.email}:`, error.message);
+            console.error('Full error:', error);
             throw new Error("Failed to send welcome email")
         }
     }
