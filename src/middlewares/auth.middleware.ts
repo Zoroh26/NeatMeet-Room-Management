@@ -11,16 +11,23 @@ interface AuthRequest extends Request {
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        // 1) Getting token and check if it exists
+        // 1) Getting token from cookies first, then fallback to Authorization header
         let token;
-        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        
+        // Check for token in cookies first
+        if (req.cookies && req.cookies.token) {
+            token = req.cookies.token;
+        } 
+        // Fallback to Authorization header for backward compatibility
+        else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             token = req.headers.authorization.split(' ')[1];
         }
 
         // Debug logging
         logger.info('Token debug', {
+            hasCookie: !!req.cookies?.token,
             hasAuthHeader: !!req.headers.authorization,
-            authHeader: req.headers.authorization ? req.headers.authorization.substring(0, 30) + '...' : 'none',
+            tokenSource: req.cookies?.token ? 'cookie' : 'header',
             tokenLength: token ? token.length : 0,
             tokenStart: token ? token.substring(0, 20) + '...' : 'none',
             url: req.url
@@ -34,7 +41,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
             });
             return res.status(401).json({
                 success: false,
-                message: 'Access token required'
+                message: 'Access token required. Please login again.'
             });
         }
 

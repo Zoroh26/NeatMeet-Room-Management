@@ -45,8 +45,8 @@ export const login = async (req: Request, res: Response) => {
             message: result.message,
             data: {
                 user: result.user,
-                token: result.token,
-                requiresPasswordChange:result.requiresPasswordChange
+                requiresPasswordChange: result.requiresPasswordChange
+                // Token removed from response - now only available via httpOnly cookie
             }
         });
 
