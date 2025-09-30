@@ -69,12 +69,19 @@ export class UserService {
     // Send welcome email with credentials (async in production)
     const { email: userEmail, name: userName, role: userRole } = newUser;
     const temporaryPassword = password;
-    try {
-      // Use async method to prevent blocking user creation in production
-      await emailService.sendWelcomeEmailAsync({ email: userEmail, name: userName, role: userRole }, temporaryPassword);
-    } catch (err) {
-      console.error(`Failed to send welcome email to ${userEmail}:`, err);
-      // Continue with user creation even if email fails
+    
+    if (process.env.NODE_ENV === 'production') {
+      // Production: Fire and forget - don't await to avoid blocking
+      emailService.sendWelcomeEmailAsync({ email: userEmail, name: userName, role: userRole }, temporaryPassword)
+        .catch(err => console.error(`Failed to queue welcome email for ${userEmail}:`, err));
+    } else {
+      // Development: Await for debugging
+      try {
+        await emailService.sendWelcomeEmailAsync({ email: userEmail, name: userName, role: userRole }, temporaryPassword);
+      } catch (err) {
+        console.error(`Failed to send welcome email to ${userEmail}:`, err);
+        // Continue with user creation even if email fails
+      }
     }
 
     
