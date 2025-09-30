@@ -31,8 +31,13 @@ class EmailService{
                 pass: process.env.SMTP_PASS,
             },
             tls: {
-                rejectUnauthorized: false
-            }
+                rejectUnauthorized: false,
+                ciphers: 'SSLv3'
+            },
+            connectionTimeout: 60000,  // 60 seconds
+            greetingTimeout: 30000,    // 30 seconds  
+            socketTimeout: 60000,      // 60 seconds
+            debug: process.env.NODE_ENV === 'development'
        };
        
        console.log('📧 Using SMTP Config:', {
@@ -48,11 +53,24 @@ class EmailService{
 
     private async verifyConnection(){
         try{
+            console.log('🔍 Testing SMTP connection...');
             await this.transporter.verify();
-            console.log("✅ SMTP connection verified");
+            console.log("✅ SMTP connection verified successfully");
         }
         catch(error:any){
             console.error("❌ SMTP connection failed:", error.message);
+            console.error("❌ Full error details:", error);
+            
+            // Provide specific troubleshooting based on error type
+            if (error.message.includes('timeout')) {
+                console.error('🔧 Timeout Fix: Check firewall, try port 465 with secure:true, or use app-specific password');
+            }
+            if (error.message.includes('authentication')) {
+                console.error('🔧 Auth Fix: Enable "Less secure apps" or use App Password for Gmail');
+            }
+            if (error.message.includes('ENOTFOUND')) {
+                console.error('🔧 DNS Fix: Check SMTP_HOST spelling and internet connection');
+            }
         }
     }
 
