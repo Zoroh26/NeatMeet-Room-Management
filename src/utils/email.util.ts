@@ -84,8 +84,18 @@ class EmailService{
     async sendWelcomeEmailAsync(user:any, temporaryPassword:string){
         // Don't await - fire and forget in production
         if (process.env.NODE_ENV === 'production') {
-            setImmediate(() => this.sendWelcomeEmail(user, temporaryPassword));
-            console.log(`📧 Welcome email queued for ${user.email} (async)`);
+            console.log(`📧 Welcome email queued for ${user.email} (async - non-blocking)`);
+            
+            // Fire and forget - catch errors silently
+            setImmediate(async () => {
+                try {
+                    await this.sendWelcomeEmail(user, temporaryPassword);
+                } catch (error: any) {
+                    console.error(`� Async email failed for ${user.email}:`, error.message);
+                    // Don't throw - this is fire and forget
+                }
+            });
+            
             return { queued: true, email: user.email };
         }
         // In development, send synchronously for debugging
