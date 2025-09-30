@@ -187,7 +187,8 @@ class AuthService {
         if(!user){
             throw new Error("User not found");
         }
-    const otpDoc = await Otp.findOne({ email: user.email });
+    // Always fetch the latest OTP for the email
+    const otpDoc = await Otp.findOne({ email: user.email }).sort({ expiry: -1 });
     if (!otpDoc) throw new Error('Invalid OTP');
     if (otpDoc.expiry < new Date()) throw new Error('OTP expired');
     // Compare provided OTP with hashed OTP
