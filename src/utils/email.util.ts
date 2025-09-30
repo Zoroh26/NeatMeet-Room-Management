@@ -22,6 +22,8 @@ class EmailService{
            throw new Error('Missing required SMTP configuration');
        }
        
+       const isProduction = process.env.NODE_ENV === 'production';
+       
        const smtpConfig = {
             host: process.env.SMTP_HOST,
             port: parseInt(process.env.SMTP_PORT || '587'),
@@ -31,13 +33,17 @@ class EmailService{
                 pass: process.env.SMTP_PASS,
             },
             tls: {
-                rejectUnauthorized: false,
-                ciphers: 'SSLv3'
+                rejectUnauthorized: isProduction,
+                ciphers: isProduction ? undefined : 'SSLv3'
             },
-            connectionTimeout: 60000,  // 60 seconds
-            greetingTimeout: 30000,    // 30 seconds  
-            socketTimeout: 60000,      // 60 seconds
-            debug: process.env.NODE_ENV === 'development'
+            // Production-optimized timeouts
+            connectionTimeout: isProduction ? 30000 : 60000,  // 30s prod, 60s dev
+            greetingTimeout: isProduction ? 15000 : 30000,    // 15s prod, 30s dev  
+            socketTimeout: isProduction ? 30000 : 60000,      // 30s prod, 60s dev
+            pool: isProduction,                               // Use connection pooling in production
+            maxConnections: isProduction ? 5 : 1,            // Max 5 connections in prod
+            maxMessages: isProduction ? 100 : 1,             // Reuse connections in prod
+            debug: !isProduction && process.env.SMTP_DEBUG === 'true'
        };
        
        console.log('📧 Using SMTP Config:', {
@@ -72,6 +78,18 @@ class EmailService{
                 console.error('🔧 DNS Fix: Check SMTP_HOST spelling and internet connection');
             }
         }
+    }
+
+    // Async method that doesn't block user creation
+    async sendWelcomeEmailAsync(user:any, temporaryPassword:string){
+        // Don't await - fire and forget in production
+        if (process.env.NODE_ENV === 'production') {
+            setImmediate(() => this.sendWelcomeEmail(user, temporaryPassword));
+            console.log(`📧 Welcome email queued for ${user.email} (async)`);
+            return { queued: true, email: user.email };
+        }
+        // In development, send synchronously for debugging
+        return await this.sendWelcomeEmail(user, temporaryPassword);
     }
 
     async sendWelcomeEmail (user:any,temporaryPassword:string){
@@ -121,12 +139,28 @@ class EmailService{
 
         try {
             console.log(`📧 Attempting to send welcome email to ${user.email}...`);
-            const result = await this.transporter.sendMail(mailOptions);
-            console.log(`✅ Welcome email sent successfully to ${user.email}. MessageId: ${result.messageId}`);
+            
+            // Set timeout for email sending in production
+            const emailTimeout = process.env.NODE_ENV === 'production' ? 30000 : 60000;
+            
+            const result = await Promise.race([
+                this.transporter.sendMail(mailOptions),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Email timeout')), emailTimeout)
+                )
+            ]);
+            
+            console.log(`✅ Welcome email sent successfully to ${user.email}. MessageId: ${(result as any).messageId}`);
             return result;
         }catch(error:any){
             console.error(`❌ Failed to send welcome email to ${user.email}:`, error.message);
             console.error('Full error:', error);
+            
+            // In production, don't throw error to avoid blocking user creation
+            if (process.env.NODE_ENV === 'production') {
+                console.log('🚨 Production mode: User creation will proceed despite email failure');
+                return null;
+            }
             throw new Error("Failed to send welcome email")
         }
     }

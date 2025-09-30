@@ -66,13 +66,15 @@ export class UserService {
 
     await newUser.save();
 
-    // Send welcome email with credentials
+    // Send welcome email with credentials (async in production)
     const { email: userEmail, name: userName, role: userRole } = newUser;
     const temporaryPassword = password;
     try {
-      await emailService.sendWelcomeEmail({ email: userEmail, name: userName, role: userRole }, temporaryPassword);
+      // Use async method to prevent blocking user creation in production
+      await emailService.sendWelcomeEmailAsync({ email: userEmail, name: userName, role: userRole }, temporaryPassword);
     } catch (err) {
       console.error(`Failed to send welcome email to ${userEmail}:`, err);
+      // Continue with user creation even if email fails
     }
 
     
